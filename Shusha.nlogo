@@ -1,4 +1,5 @@
 turtles-own [
+  foo
   side         ;; Who does this agent fight for?
   kind         ;; What type of agent is it?
   health       ;; Health Points
