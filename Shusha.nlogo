@@ -1,12 +1,104 @@
-turtles-own [
-  side         ;; Who does this agent fight for?
-  kind         ;; What type of agent is it?
-  health       ;; Health Points
-  speed        ;; Speed
-  rate         ;; How fast can weapon be used?
-  accuracy     ;; How likely to hit or view
-  dist         ;; How far away can the agent hit or view
+globals [
+  aze_color
+  arm_color
+  flat_color
+  forest_color
+  river_color
+  mountain_color
+  fog_color
+  sim_map_56
 ]
+
+turtles-own [
+  side     ;; Who does this agent fight for?
+  kind     ;; What type of agent is it?
+  health   ;; Health Points
+  speed    ;; Speed
+  rate     ;; How fast can weapon be used?
+  accuracy ;; How likely to hit or view
+  dist     ;; How far away can the agent hit or view
+]
+
+patches-own [
+  patch_pos           ;; Patch Position
+  environment         ;; What type of patch is it?
+  mod_infantry_speed  ;; Infantry Speed modifier by env
+  mod_infantry_acc    ;; Infantry Accuracy modifier by env
+  mod_artillery_speed ;; Artillery Speed modifier by env
+  mod_artillery_acc   ;; Artillery Accuracy modifier by env
+  mod_artillery_acc_d ;; Artillery Drone Assist Accuracy modifier by env
+  mod_drone_acc       ;; Drone View Accuracy modifier by env
+]
+
+to set_globals
+  set aze_color yellow
+  set arm_color magenta
+  set flat_color brown
+  set forest_color green
+  set river_color blue
+  set mountain_color gray
+  set fog_color white
+
+  ;; Map for 56x56
+  set sim_map_56 (word
+    "MMMMMMMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGG"
+    "MMMMMMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGG"
+    "MMMMMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGG"
+    "MMMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGGG"
+    "MMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGGG"
+    "MMMMMMFFFFFFFFFFFFFFFFFFFFMMMMMMFFFFFFFFFFFGGGGGGGGGGGGG"
+    "MMMMFFFFFFFFFFFFFFFFFFFFMMMMMMMMMMFFFFFFFFGGGGGGGGGGGGGF"
+    "FFFFFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMFFFFGGGGGGGGGGGGGFF"
+    "FFFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMFGGGGGGGGGGGGFFF"
+    "FFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMGGGGGGGGGGGGFFFF"
+    "FFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMGGGGGGGGGGGFFFFF"
+    "FFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMMGGGGGGGGGGFFFFFF"
+    "FFFFFFFFFFFFMMMMMMMMMFFFFFFFFFFFFFFMMMMMGGGGGGGGGGFFFFFF"
+    "FFFFFFFFFFFFMMMMMMMMFFFFFFFFFFFFFFFFMMMMMGGGGGGGGGFFFFFF"
+    "FFFFFFFFFFFMMMMMMMMFFFFFFFFFFFFFFFFFFMMMMGGGGGGGGGFFFFFF"
+    "FFFFFFFFFFMMMMMMMMMFFFFFFFFFFFFFFFFFFFMMMMGGGGGGGGFFFFFF"
+    "FFFFFFFFFFMMMMMMMMFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGGGFFFFFF"
+    "FFFFFFFFFMMMMMMMFFFFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGGFFFFFF"
+    "FFFFFFFFMMMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGFFFFFF"
+    "FFFFFFFFMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGFFFFF"
+    "FFFFFFFMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGFFFFF"
+    "FFFFFFMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGFFFFF"
+    "GGGGGGMMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGFFFF"
+    "GGGGGGMMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGFFF"
+    "GGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGFF"
+    "GGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGFF"
+    "GGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGF"
+    "GGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMGGGGGGGGG"
+    "GGGGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGGG"
+    "GGGGGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMMMMGGGGGG"
+    "GGGGGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMMMMMMGGGGG"
+    "GGGGGGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMMMMMMMMGGGG"
+    "GGGGGGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFFFFMMMMMMMMMMMMMGGG"
+    "GGGGGGGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFFFFMMMMMMMMMMMMMMMGG"
+    "GGGGGGGGGGGGGMMMFFFFFFFFFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGMMMMFFFFFFFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGMMMFFFFFFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGMMMFFFFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGMMMMFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGMMMMFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGMMMFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+  )
+end
 
 ;; Function to create Infantry turtles.
 ;;
@@ -26,8 +118,8 @@ to init_infantry
     set accuracy infantry_hit_accuracy
     set dist infantry_hit_distance
     ifelse _side = "ARM"
-      [ set color orange ]
-      [ set color blue ]
+      [ set color arm_color ]
+      [ set color aze_color ]
   ]
 end
 
@@ -49,8 +141,8 @@ to init_artillery
     set accuracy artillery_hit_accuracy
     set dist artillery_hit_distance
     ifelse _side = "ARM"
-      [ set color orange ]
-      [ set color blue ]
+      [ set color arm_color ]
+      [ set color aze_color ]
   ]
 end
 
@@ -72,8 +164,8 @@ to init_drone
     set accuracy drone_view_accuracy
     set dist drone_view_distance
     ifelse _side = "ARM"
-      [ set color orange ]
-      [ set color blue ]
+      [ set color arm_color ]
+      [ set color aze_color ]
   ]
 end
 
@@ -91,8 +183,59 @@ to init_armenia
   init_drone arm_drone_count "ARM"
 end
 
+;; Initializes patches
+to init_patches
+  [sim_map dim]
+  ;; color patches
+  ask patches [
+    set patch_pos (item (pxcor + (pycor * dim)) sim_map)
+    if patch_pos = "F" [
+      set pcolor flat_color
+      set environment "flat"
+      set mod_infantry_speed 1
+      set mod_infantry_acc 1
+      set mod_artillery_speed 1
+      set mod_artillery_acc 1
+      set mod_artillery_acc_d 2
+      set mod_drone_acc 1
+    ]
+    if patch_pos = "G" [
+      set pcolor forest_color
+      set environment "forest"
+      set mod_infantry_speed 0.5
+      set mod_infantry_acc 0.5
+      set mod_artillery_speed 0.5
+      set mod_artillery_acc 0.5
+      set mod_artillery_acc_d 1
+      set mod_drone_acc 0.25
+    ]
+    if patch_pos = "R" [
+      set pcolor river_color
+      set environment "river"
+      set mod_infantry_speed 0.25
+      set mod_infantry_acc 2
+      set mod_artillery_speed 0.2
+      set mod_artillery_acc 2
+      set mod_artillery_acc_d 2
+      set mod_drone_acc 1
+    ]
+    if patch_pos = "M" [
+      set pcolor mountain_color
+      set environment "mountain"
+      set mod_infantry_speed 0.125
+      set mod_infantry_acc 0.3
+      set mod_artillery_speed 0.1
+      set mod_artillery_acc 0.125
+      set mod_artillery_acc_d 0.25
+      set mod_drone_acc 0.75
+    ]
+  ]
+end
+
 to setup
   clear-all
+  set_globals
+  init_patches sim_map_56 56
   init_azerbaijan
   init_armenia
   reset-ticks
@@ -103,13 +246,13 @@ to go
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-715
+716
 10
-1407
-703
+1401
+696
 -1
 -1
-12.0
+12.1
 1
 10
 1
@@ -119,10 +262,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--28
-28
--28
-28
+0
+55
+0
+55
 1
 1
 1
