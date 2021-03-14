@@ -118,6 +118,18 @@ to init_infantry
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
+    (ifelse _side = "ARM"
+      [setxy 15 + random 25  23 + random 13]
+    )
+    (if _side = "AZE" and who mod 1 = 0
+      [setxy 51 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 3 = 0
+      [setxy 2 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 2 = 0
+      [setxy 15 + random 25 2 + random 4]
+    )
   ]
 end
 
@@ -141,6 +153,18 @@ to init_artillery
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
+    (ifelse _side = "ARM"
+      [setxy 19 + random 15  41 + random 4]
+    )
+    (if _side = "AZE" and who mod 1 = 0
+      [setxy 51 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 3 = 0
+      [setxy 2 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 2 = 0
+      [setxy 15 + random 25 2 + random 4]
+    )
   ]
 end
 
@@ -164,6 +188,18 @@ to init_drone
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
+    (ifelse _side = "ARM"
+      [setxy 16 + random 23  19 + random 21]
+    )
+    (if _side = "AZE" and who mod 1 = 0
+      [setxy 51 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 3 = 0
+      [setxy 2 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 2 = 0
+      [setxy 15 + random 25 2 + random 4]
+    )
   ]
 end
 
@@ -663,7 +699,7 @@ fog_coverage
 fog_coverage
 0
 1
-0.4
+0.04
 0.01
 1
 NIL
