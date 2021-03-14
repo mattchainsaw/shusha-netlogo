@@ -5,7 +5,6 @@ globals [
   forest_color
   river_color
   mountain_color
-  fog_color
   sim_map_56
 ]
 
@@ -37,7 +36,6 @@ to set_globals
   set forest_color green
   set river_color blue
   set mountain_color gray
-  set fog_color white
 
   ;; Map for 56x56
   set sim_map_56 (word
@@ -120,6 +118,18 @@ to init_infantry
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
+    (ifelse _side = "ARM"
+      [setxy 15 + random 25  23 + random 13]
+    )
+    (if _side = "AZE" and who mod 1 = 0
+      [setxy 51 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 3 = 0
+      [setxy 2 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 2 = 0
+      [setxy 15 + random 25 2 + random 4]
+    )
   ]
 end
 
@@ -143,6 +153,18 @@ to init_artillery
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
+    (ifelse _side = "ARM"
+      [setxy 19 + random 15  41 + random 4]
+    )
+    (if _side = "AZE" and who mod 1 = 0
+      [setxy 51 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 3 = 0
+      [setxy 2 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 2 = 0
+      [setxy 15 + random 25 2 + random 4]
+    )
   ]
 end
 
@@ -166,6 +188,18 @@ to init_drone
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
+    (ifelse _side = "ARM"
+      [setxy 16 + random 23  19 + random 21]
+    )
+    (if _side = "AZE" and who mod 1 = 0
+      [setxy 51 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 3 = 0
+      [setxy 2 + random 4 17 + random 28]
+    )
+    (if _side = "AZE" and who mod 2 = 0
+      [setxy 15 + random 25 2 + random 4]
+    )
   ]
 end
 
@@ -232,10 +266,25 @@ to init_patches
   ]
 end
 
+to init_fog
+  ask patches [
+    if (random-float 1) <= fog_coverage [
+    set pcolor pcolor + 2
+      set mod_infantry_speed (mod_infantry_speed * 0.9)
+      set mod_infantry_acc (mod_infantry_acc * 0.9)
+      set mod_artillery_speed (mod_artillery_speed * 0.9)
+      set mod_artillery_acc (mod_artillery_acc * 0.9)
+      set mod_artillery_acc_d (mod_artillery_acc_d * 0.9)
+      set mod_drone_acc (mod_drone_acc * 0.5)
+    ]
+  ]
+end
+
 to setup
   clear-all
   set_globals
   init_patches sim_map_56 56
+  init_fog ;; must call after `init_patches`
   init_azerbaijan
   init_armenia
   reset-ticks
@@ -637,6 +686,21 @@ drone_view_distance
 100
 30.0
 1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+360
+80
+532
+113
+fog_coverage
+fog_coverage
+0
+1
+0.04
+0.01
 1
 NIL
 HORIZONTAL
