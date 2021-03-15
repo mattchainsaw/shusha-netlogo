@@ -30,12 +30,12 @@ patches-own [
 ]
 
 to set_globals
-  set aze_color yellow
-  set arm_color magenta
-  set flat_color brown
-  set forest_color green
+  set aze_color 93
+  set arm_color 13
+  set flat_color 36
+  set forest_color 52
   set river_color blue
-  set mountain_color gray
+  set mountain_color 6
 
   ;; Map for 56x56
   set sim_map_56 (word
@@ -290,7 +290,21 @@ to setup
   reset-ticks
 end
 
+to move
+  ask turtles [
+    if kind = "infantry" and side = "AZE" [
+      face min-one-of patches with [ pxcor  >= 26 and pxcor < 30 and pycor >= 26 and pycor < 30 ] [ distance myself ]
+      forward mod_infantry_speed * speed / 100
+    ]
+    if kind = "drone" and side = "AZE" [
+      face min-one-of patches with [ pxcor  >= 10 and pxcor < 15 and pycor >= 10 and pycor < 15 ] [ distance myself ]
+      forward speed / 100
+    ]
+  ]
+end
+
 to go
+  move
   tick
 end
 @#$#@#$#@
@@ -699,7 +713,7 @@ fog_coverage
 fog_coverage
 0
 1
-0.04
+0.25
 0.01
 1
 NIL
