@@ -289,8 +289,29 @@ to setup
   init_armenia
   reset-ticks
 end
+to move
+  ask turtles [
+    if kind = "infantry" and side = "AZE" [
+    face min-one-of patches with [ pxcor  >= 24 and pxcor < 32 and pycor >= 24 and pycor < 32 ] [ distance myself ]
+    forward speed / 100
+    ]
+  ]
+    ask turtles [
+    if kind = "drone" and side = "AZE" [
+    face min-one-of patches with [ pxcor  >= 10 and pxcor < 15 and pycor >= 10 and pycor < 15 ] [ distance myself ]
+    forward speed / 100
+    ]
+  ]
+      ask turtles [
+    if kind = "artillery" and side = "AZE" [
+    face min-one-of patches with [ pxcor  >= 10 and pxcor < 15 and pycor >= 10 and pycor < 15 ] [ distance myself ]
+    forward speed / 100
+    ]
+  ]
+end
 
 to go
+  move
   tick
 end
 @#$#@#$#@
