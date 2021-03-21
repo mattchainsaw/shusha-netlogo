@@ -6,6 +6,11 @@ globals [
   river_color
   mountain_color
   sim_map_56
+  target
+  scanx1
+  scanx2
+  scany1
+  scany2
 ]
 
 turtles-own [
@@ -16,6 +21,9 @@ turtles-own [
   rate     ;; How fast can weapon be used?
   accuracy ;; How likely to hit or view
   dist     ;; How far away can the agent hit or view
+  ox       ;; Orginal x coordinate
+  oy       ;; Orginal y coordinate
+  route    ;; Route direction
 ]
 
 patches-own [
@@ -115,19 +123,20 @@ to init_infantry
     set rate infantry_hit_rate
     set accuracy infantry_hit_accuracy
     set dist infantry_hit_distance
+    set route 1
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
     (ifelse _side = "ARM"
       [setxy 15 + random 25  23 + random 13]
     )
-    (if _side = "AZE" and who mod 1 = 0
+    (if _side = "AZE" and who mod 3 = 1
       [setxy 51 + random 4 17 + random 28]
     )
-    (if _side = "AZE" and who mod 3 = 0
+    (if _side = "AZE" and who mod 3 = 2
       [setxy 2 + random 4 17 + random 28]
     )
-    (if _side = "AZE" and who mod 2 = 0
+    (if _side = "AZE" and who mod 3 = 0
       [setxy 15 + random 25 2 + random 4]
     )
   ]
@@ -185,20 +194,29 @@ to init_drone
     set rate drone_view_rate
     set accuracy drone_view_accuracy
     set dist drone_view_distance
+    set route 1
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
     (ifelse _side = "ARM"
-      [setxy 16 + random 23  19 + random 21]
+      [setxy 16 + random 23  19 + random 21
+      set ox xcor
+      set oy ycor]
     )
     (if _side = "AZE" and who mod 1 = 0
-      [setxy 51 + random 4 17 + random 28]
+      [setxy 51 + random 4 17 + random 28
+      set ox  xcor
+      set oy  ycor]
     )
     (if _side = "AZE" and who mod 3 = 0
-      [setxy 2 + random 4 17 + random 28]
+      [setxy 2 + random 4 17 + random 28
+      set ox xcor
+      set oy ycor]
     )
     (if _side = "AZE" and who mod 2 = 0
-      [setxy 15 + random 25 2 + random 4]
+      [setxy 15 + random 25 2 + random 4
+      set ox xcor
+      set oy ycor]
     )
   ]
 end
@@ -297,11 +315,115 @@ to move
       forward mod_infantry_speed * speed / 100
     ]
     if kind = "drone" and side = "AZE" [
-      face min-one-of patches with [ pxcor  >= 10 and pxcor < 15 and pycor >= 10 and pycor < 15 ] [ distance myself ]
-      forward speed / 100
+       if ox < 7 [
+        set scanx1 26
+        set scanx2 30
+        set scany1 20
+        set scany2 25
+       if route = 1 [
+      face min-one-of patches with [ pxcor  > scanx1 and pxcor < scanx2 and pycor > scany1 and pycor < scany2 ] [ distance myself ]
+        fd speed / 100
+        if xcor >= scanx1 [set route 0]
+        ]
+        if route = 0 [
+          set target patch ox oy
+      face target
+          fd speed / 100
+          if xcor <= ox   [set route 1]
+        ]
+      ]
+      if ox > 7 and ox < 50 [
+        set scanx1 20
+        set scanx2 41
+        set scany1 45
+        set scany2 48
+       if route = 1 [
+      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
+        fd speed / 100
+        if ( ycor >= scany1) [set route 0]
+        ]
+        if route = 0 [
+          set target patch ox oy
+      face target
+          fd speed / 100
+          if (xcor <= ox + 1 and ycor <= oy)   [set route 1]
+        ]
+      ]
+            if ox > 50 [
+        set scanx1 14
+        set scanx2 20
+        set scany1 30
+        set scany2 48
+       if route = 1 [
+      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
+        fd speed / 100
+        if (xcor < scanx2 and ycor >= scany1) [set route 0]
+        ]
+        if route = 0 [
+          set target patch ox oy
+      face target
+          fd speed / 100
+          if (xcor >= ox - 1)   [set route 1]
+        ]
+      ]
+    ]
+    ;; Movement
+        if kind = "drone" and side = "ARM" [
+       if ox < 23 [
+        set scanx1 0
+        set scanx2 10
+        set scany1 16
+        set scany2 45
+       if route = 1 [
+      face min-one-of patches with [ pxcor  > scanx1 and pxcor < scanx2 and pycor > scany1 and pycor < scany2 ] [ distance myself ]
+        fd speed / 100
+        if xcor <= scanx2 [set route 0]
+        ]
+        if route = 0 [
+          set target patch ox oy
+      face target
+          fd speed / 100
+          if xcor >= ox   [set route 1]
+        ]
+      ]
+      if ox >= 23 and ox < 30 [
+        set scanx1 14
+        set scanx2 41
+        set scany1 0
+        set scany2 7
+       if route = 1 [
+      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
+        fd speed / 100
+        if ( ycor <= scany2) [set route 0]
+        ]
+        if route = 0 [
+          set target patch ox oy
+      face target
+          fd speed / 100
+          if (ycor >= oy)   [set route 1]
+        ]
+      ]
+            if ox >= 30 [
+        set scanx1 50
+        set scanx2 56
+        set scany1 16
+        set scany2 45
+       if route = 1 [
+      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
+        fd speed / 100
+        if (xcor > scanx1 ) [set route 0]
+        ]
+        if route = 0 [
+          set target patch ox oy
+      face target
+          fd speed / 100
+          if (xcor <= ox )   [set route 1]
+        ]
+      ]
     ]
   ]
 end
+
 
 to go
   move
@@ -448,7 +570,7 @@ arm_drone_count
 arm_drone_count
 0
 50
-5.0
+14.0
 1
 1
 NIL
@@ -463,7 +585,7 @@ aze_drone_count
 aze_drone_count
 0
 50
-35.0
+22.0
 1
 1
 NIL
