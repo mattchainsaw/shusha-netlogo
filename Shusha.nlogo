@@ -6,6 +6,7 @@ globals [
   river_color
   mountain_color
   sim_map_56
+  counter ;;a counter variable that I use when doing a while loop in init_fog
 ]
 
 turtles-own [
@@ -267,16 +268,17 @@ to init_patches
 end
 
 to init_fog
-  ask patches [
-    if (random-float 1) <= fog_coverage [
-    set pcolor pcolor + 2
+  ;;while [counter <= fog_coverage ] [
+  ask n-of fog_coverage patches with [(0 < pxcor and 20 > pxcor ) and (20 < pycor and 40 > pycor)] [
+      set pcolor pcolor + 2
       set mod_infantry_speed (mod_infantry_speed * 0.9)
       set mod_infantry_acc (mod_infantry_acc * 0.9)
       set mod_artillery_speed (mod_artillery_speed * 0.9)
       set mod_artillery_acc (mod_artillery_acc * 0.9)
       set mod_artillery_acc_d (mod_artillery_acc_d * 0.9)
       set mod_drone_acc (mod_drone_acc * 0.5)
-    ]
+      ;;set counter counter + 1
+    ;]
   ]
 end
 
@@ -712,9 +714,9 @@ SLIDER
 fog_coverage
 fog_coverage
 0
+361
+200.0
 1
-0.25
-0.01
 1
 NIL
 HORIZONTAL
