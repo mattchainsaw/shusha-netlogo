@@ -1,3 +1,7 @@
+breed [ infantrys infantry ]
+breed [ artillerys artillery ]
+breed [ drones drone ]
+
 globals [
   aze_color
   arm_color
@@ -6,14 +10,38 @@ globals [
   river_color
   mountain_color
   sim_map_56
-  target
-  scanx1
-  scanx2
-  scany1
-  scany2
+
+  AZE_infantry_kills
+  ARM_infantry_kills
+  AZE_artillery_kills
+  ARM_artillery_kills
+
+  ;; set in interface
+  ;; arm_infantry_count
+  ;; aze_infantry_count
+  ;; arm_artillery_count
+  ;; aze_artillery_count
+  ;; arm_drone_count
+  ;; aze_drone_count
+  ;; infantry_init_health
+  ;; infantry_speed
+  ;; infantry_hit_rate
+  ;; infantry_hit_accuracy
+  ;; infantry_hit_distance
+  ;; artillery_init_health
+  ;; artillery_speed
+  ;; artillery_hit_rate
+  ;; artillery_hit_accuracy
+  ;; artillery_hit_distance
+  ;; drone_init_health
+  ;; drone_speed
+  ;; drone_view_rate
+  ;; drone_view_accuracy
+  ;; drone_view_distance
+  ;; fog_coverage
 ]
 
-turtles-own [
+infantrys-own [
   side     ;; Who does this agent fight for?
   kind     ;; What type of agent is it?
   health   ;; Health Points
@@ -21,9 +49,28 @@ turtles-own [
   rate     ;; How fast can weapon be used?
   accuracy ;; How likely to hit or view
   dist     ;; How far away can the agent hit or view
-  ox       ;; Orginal x coordinate
-  oy       ;; Orginal y coordinate
-  route    ;; Route direction
+  in-city? ;; boolean of if in the city
+]
+
+artillerys-own [
+  side     ;; Who does this agent fight for?
+  kind     ;; What type of agent is it?
+  health   ;; Health Points
+  speed    ;; Speed
+  rate     ;; How fast can weapon be used?
+  accuracy ;; How likely to hit or view
+  dist     ;; How far away can the agent hit or view
+  targets  ;; List of targets
+]
+
+drones-own [
+  side     ;; Who does this agent fight for?
+  kind     ;; What type of agent is it?
+  health   ;; Health Points
+  speed    ;; Speed
+  rate     ;; How fast can weapon be used?
+  accuracy ;; How likely to hit or view
+  dist     ;; How far away can the agent hit or view
 ]
 
 patches-own [
@@ -44,6 +91,10 @@ to set_globals
   set forest_color 52
   set river_color blue
   set mountain_color 6
+  set AZE_infantry_kills 0
+  set ARM_infantry_kills 0
+  set AZE_artillery_kills 0
+  set ARM_artillery_kills 0
 
   ;; Map for 56x56
   set sim_map_56 (word
@@ -113,32 +164,35 @@ end
 ;;   _side   - Who does this agent fight for?
 to init_infantry
   [_number _side]
-  create-turtles _number [
+  create-infantrys _number [
     setxy random-xcor random-ycor
     set shape "person"
     set side _side
     set kind "infantry"
     set health infantry_init_health
     set speed infantry_speed
-    set rate infantry_hit_rate
+    set rate infantry_hit_rate * 100
     set accuracy infantry_hit_accuracy
     set dist infantry_hit_distance
-    set route 1
-    ifelse _side = "ARM"
-      [ set color arm_color ]
-      [ set color aze_color ]
-    (ifelse _side = "ARM"
-      [setxy 15 + random 25  23 + random 13]
-    )
-    (if _side = "AZE" and who mod 3 = 1
-      [setxy 51 + random 4 17 + random 28]
-    )
-    (if _side = "AZE" and who mod 3 = 2
-      [setxy 2 + random 4 17 + random 28]
-    )
-    (if _side = "AZE" and who mod 3 = 0
-      [setxy 15 + random 25 2 + random 4]
-    )
+    ifelse _side = "ARM" [
+      set color arm_color
+      set in-city? true
+    ] [
+      set color aze_color
+      set in-city? false
+    ]
+    if _side = "ARM" [
+      setxy 15 + random 25  23 + random 13
+    ]
+    if _side = "AZE" and who mod 3 = 1 [
+      setxy 51 + random 4 17 + random 28
+    ]
+    if _side = "AZE" and who mod 3 = 2 [
+      setxy 2 + random 4 17 + random 28
+    ]
+    if _side = "AZE" and who mod 3 = 0 [
+      setxy 15 + random 25 2 + random 4
+    ]
   ]
 end
 
@@ -149,31 +203,32 @@ end
 ;;   _side   - Who does this agent fight for?
 to init_artillery
   [_number _side]
-  create-turtles _number [
+  create-artillerys _number [
     setxy random-xcor random-ycor
     set shape "circle 2"
     set side _side
     set kind "artillery"
     set health artillery_init_health
     set speed artillery_speed
-    set rate artillery_hit_rate
+    set rate artillery_hit_rate * 100
     set accuracy artillery_hit_accuracy
     set dist artillery_hit_distance
+    set targets []
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
-    (ifelse _side = "ARM"
-      [setxy 19 + random 15  41 + random 4]
-    )
-    (if _side = "AZE" and who mod 1 = 0
-      [setxy 51 + random 4 17 + random 28]
-    )
-    (if _side = "AZE" and who mod 3 = 0
-      [setxy 2 + random 4 17 + random 28]
-    )
-    (if _side = "AZE" and who mod 2 = 0
-      [setxy 15 + random 25 2 + random 4]
-    )
+    if _side = "ARM" [
+      setxy 19 + random 15  41 + random 4
+    ]
+    if _side = "AZE" and who mod 1 = 0 [
+      setxy 51 + random 4 17 + random 28
+    ]
+    if _side = "AZE" and who mod 3 = 0 [
+      setxy 2 + random 4 17 + random 28
+    ]
+    if _side = "AZE" and who mod 2 = 0 [
+      setxy 15 + random 25 2 + random 4
+    ]
   ]
 end
 
@@ -184,40 +239,33 @@ end
 ;;   _side   - Who does this agent fight for?
 to init_drone
   [_number _side]
-  create-turtles _number [
+  create-drones _number [
     setxy random-xcor random-ycor
     set shape "airplane"
     set side _side
     set kind "drone"
     set health drone_init_health
     set speed drone_speed
-    set rate drone_view_rate
+    set rate drone_view_rate * 100
     set accuracy drone_view_accuracy
     set dist drone_view_distance
-    set route 1
     ifelse _side = "ARM"
       [ set color arm_color ]
       [ set color aze_color ]
-    (ifelse _side = "ARM"
-      [setxy 16 + random 23  19 + random 21
-      set ox xcor
-      set oy ycor]
-    )
-    (if _side = "AZE" and who mod 1 = 0
-      [setxy 51 + random 4 17 + random 28
-      set ox  xcor
-      set oy  ycor]
-    )
-    (if _side = "AZE" and who mod 3 = 0
-      [setxy 2 + random 4 17 + random 28
-      set ox xcor
-      set oy ycor]
-    )
-    (if _side = "AZE" and who mod 2 = 0
-      [setxy 15 + random 25 2 + random 4
-      set ox xcor
-      set oy ycor]
-    )
+
+    if _side = "ARM" [
+      setxy 16 + random 23  19 + random 21
+    ]
+    if _side = "AZE" and who mod 1 = 0 [
+      setxy 51 + random 4 17 + random 28
+    ]
+    if _side = "AZE" and who mod 3 = 0 [
+      setxy 2 + random 4 17 + random 28
+    ]
+    if _side = "AZE" and who mod 2 = 0 [
+      setxy 15 + random 25 2 + random 4
+    ]
+    set heading (towards patch 27 27) + random 90 - 45
   ]
 end
 
@@ -287,7 +335,7 @@ end
 to init_fog
   ask patches [
     if (random-float 1) <= fog_coverage [
-    set pcolor pcolor + 2
+      set pcolor pcolor + 2
       set mod_infantry_speed (mod_infantry_speed * 0.9)
       set mod_infantry_acc (mod_infantry_acc * 0.9)
       set mod_artillery_speed (mod_artillery_speed * 0.9)
@@ -297,6 +345,186 @@ to init_fog
     ]
   ]
 end
+
+to provide-recon
+  [ thisDrone ]
+  let mySide [side] of thisDrone
+  let thisArtillery closest_artillery_friend thisDrone
+  let enemy drone_view_enemy thisDrone
+  if enemy != nobody [
+    ask thisArtillery [
+      set targets lput enemy targets
+    ]
+  ]
+end
+
+to-report drone_view_enemy
+  [ thisTurtle ]
+  let mySide [side] of thisTurtle
+  let spotted closest_infantry_enemy thisTurtle
+  if nobody != spotted [
+    if (drone_view_accuracy * mod_drone_acc) >= random 1 [
+      report spotted
+    ]
+  ]
+  report nobody
+end
+
+to-report closest_artillery_friend
+  [ thisTurtle ]
+  let mySide [side] of thisTurtle
+  report min-one-of artillerys with [side = mySide] [distance thisTurtle]
+end
+
+to-report closest_infantry_enemy
+  [ thisTurtle ]
+  let mySide [side] of thisTurtle
+  let closest min-one-of infantrys with [side != mySide] [distance thisTurtle]
+  ifelse distance closest <= dist
+    [ report closest ]
+    [ report nobody ]
+end
+
+to-report city_center
+  [ thisTurtle ]
+  report min-one-of patches with [ pxcor  >= 24 and pxcor < 32 and pycor >= 28 and pycor < 36 ] [ distance thisTurtle ]
+  end
+
+to turn-towards-center
+  [ thisDrone ]
+  ask thisDrone [
+    let change 3
+    if side = "ARM" [
+      set change -1
+    ]
+    let current heading
+    face city_center self
+    let target heading
+    let alpha target - current
+    let beta alpha + 360
+    let gamma alpha - 360
+    if (abs alpha <= abs beta and abs alpha <= abs gamma) [
+      ifelse alpha > 0
+        [ set heading current + change ]
+        [ set heading current - change ]
+    ]
+    if (abs beta <= abs alpha and abs beta <= abs gamma) [
+      ifelse beta > 0
+        [ set heading current + change ]
+        [ set heading current - change ]
+    ]
+    if (abs gamma <= abs alpha and abs gamma <= abs beta) [
+      ifelse gamma > 0
+        [ set heading current + change ]
+        [ set heading current - change ]
+    ]
+  ]
+end
+
+to move
+  ask infantrys [
+    ifelse side = "AZE" [
+      let enemy closest_infantry_enemy self
+      ifelse enemy != nobody [
+        face enemy
+        attack self enemy
+      ] [
+        face city_center self
+      ]
+      forward mod_infantry_speed * speed / 100
+
+    ] [
+      let enemy closest_infantry_enemy self
+      if enemy != nobody [
+        face enemy
+        attack self enemy
+        forward mod_infantry_speed * speed / 100
+      ]
+    ]
+  ]
+  ask drones [
+    if pxcor = max-pxcor or
+       pxcor = min-pxcor or
+       pycor = max-pycor or
+       pycor = min-pycor [
+      face city_center self
+    ]
+    turn-towards-center self
+    if random 1 < 0.5 [
+      ifelse random 1 < 0.0
+        [ rt random 10 - 5 ]
+        [ lt random 10 - 5 ]
+    ]
+    forward speed / 100
+    provide-recon self
+  ]
+  ask artillerys [
+    if not empty? targets [
+      let target first targets
+      set targets []
+      attack self target
+    ]
+  ]
+
+end
+
+to suffer_damage
+  [ thisTurtle acc power responsible ]
+  repeat power [
+    if thisTurtle != nobody [
+      ask thisTurtle [
+        if acc >= random 1 [
+          set health health - 1
+          if health <= 0 [
+            if responsible = "ARM_infantry" [
+              set ARM_infantry_kills ARM_infantry_kills + 1
+            ]
+            if responsible = "AZE_infantry" [
+              set AZE_infantry_kills AZE_infantry_kills + 1
+            ]
+            if responsible = "ARM_artillery" [
+              set ARM_artillery_kills ARM_artillery_kills + 1
+            ]
+            if responsible = "AZE_artillery" [
+              set AZE_artillery_kills AZE_artillery_kills + 1
+            ]
+            die
+          ]
+        ]
+      ]
+    ]
+  ]
+end
+
+to attack
+  [ thisTurtle enemyTurtle ]
+
+  if enemyTurtle != nobody [
+
+    let thisKind [kind] of thisTurtle
+    let enemyKind [kind] of enemyTurtle
+    let thisSide [side] of thisTurtle
+    let enemySide [side] of enemyTurtle
+    let power [health] of thisTurtle
+    let r [rate] of thisTurtle
+
+    if ticks mod r = 0 [
+      if thisSide != enemySide [ ;; Should never be false, but for safety
+        if thisKind = "infantry" and enemyKind = "infantry" [
+          suffer_damage enemyTurtle (mod_infantry_acc * accuracy) power (word thisSide "_" thisKind)
+        ]
+        if thisKind = "artillery" and enemyKind = "infantry" [
+          let loc_x [xcor] of enemyTurtle
+          let loc_y [ycor] of enemyTurtle
+          ask infantrys with [xcor = loc_x and ycor = loc_y] [
+            suffer_damage enemyTurtle (mod_artillery_acc * accuracy) power (word thisSide "_" thisKind)
+          ]
+        ]
+      ]
+    ]
+  ]
+end
+
 
 to setup
   clear-all
@@ -308,126 +536,12 @@ to setup
   reset-ticks
 end
 
-to move
-  ask turtles [
-    if kind = "infantry" and side = "AZE" [
-      face min-one-of patches with [ pxcor  >= 26 and pxcor < 30 and pycor >= 26 and pycor < 30 ] [ distance myself ]
-      forward mod_infantry_speed * speed / 100
-    ]
-    if kind = "drone" and side = "AZE" [
-       if ox < 7 [
-        set scanx1 26
-        set scanx2 30
-        set scany1 20
-        set scany2 25
-       if route = 1 [
-      face min-one-of patches with [ pxcor  > scanx1 and pxcor < scanx2 and pycor > scany1 and pycor < scany2 ] [ distance myself ]
-        fd speed / 100
-        if xcor >= scanx1 [set route 0]
-        ]
-        if route = 0 [
-          set target patch ox oy
-      face target
-          fd speed / 100
-          if xcor <= ox   [set route 1]
-        ]
-      ]
-      if ox > 7 and ox < 50 [
-        set scanx1 20
-        set scanx2 41
-        set scany1 45
-        set scany2 48
-       if route = 1 [
-      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
-        fd speed / 100
-        if ( ycor >= scany1) [set route 0]
-        ]
-        if route = 0 [
-          set target patch ox oy
-      face target
-          fd speed / 100
-          if (xcor <= ox + 1 and ycor <= oy)   [set route 1]
-        ]
-      ]
-            if ox > 50 [
-        set scanx1 14
-        set scanx2 20
-        set scany1 30
-        set scany2 48
-       if route = 1 [
-      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
-        fd speed / 100
-        if (xcor < scanx2 and ycor >= scany1) [set route 0]
-        ]
-        if route = 0 [
-          set target patch ox oy
-      face target
-          fd speed / 100
-          if (xcor >= ox - 1)   [set route 1]
-        ]
-      ]
-    ]
-    ;; Movement
-        if kind = "drone" and side = "ARM" [
-       if ox < 23 [
-        set scanx1 0
-        set scanx2 10
-        set scany1 16
-        set scany2 45
-       if route = 1 [
-      face min-one-of patches with [ pxcor  > scanx1 and pxcor < scanx2 and pycor > scany1 and pycor < scany2 ] [ distance myself ]
-        fd speed / 100
-        if xcor <= scanx2 [set route 0]
-        ]
-        if route = 0 [
-          set target patch ox oy
-      face target
-          fd speed / 100
-          if xcor >= ox   [set route 1]
-        ]
-      ]
-      if ox >= 23 and ox < 30 [
-        set scanx1 14
-        set scanx2 41
-        set scany1 0
-        set scany2 7
-       if route = 1 [
-      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
-        fd speed / 100
-        if ( ycor <= scany2) [set route 0]
-        ]
-        if route = 0 [
-          set target patch ox oy
-      face target
-          fd speed / 100
-          if (ycor >= oy)   [set route 1]
-        ]
-      ]
-            if ox >= 30 [
-        set scanx1 50
-        set scanx2 56
-        set scany1 16
-        set scany2 45
-       if route = 1 [
-      face min-one-of patches with [ pxcor  >= scanx1 and pxcor < scanx2 and pycor >= scany1 and pycor < scany2 ] [ distance myself ]
-        fd speed / 100
-        if (xcor > scanx1 ) [set route 0]
-        ]
-        if route = 0 [
-          set target patch ox oy
-      face target
-          fd speed / 100
-          if (xcor <= ox )   [set route 1]
-        ]
-      ]
-    ]
-  ]
-end
-
-
 to go
-  move
-  tick
+  if (count infantrys with [side = "ARM"]) > 2 and
+     (count infantrys with [side = "AZE"]) > 2 [
+    move
+    tick
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -458,10 +572,10 @@ ticks
 30.0
 
 BUTTON
-377
-10
-442
-43
+564
+15
+629
+48
 Go
 go
 T
@@ -475,10 +589,10 @@ NIL
 0
 
 BUTTON
-307
-10
-373
-43
+494
+15
+560
+48
 Setup
 setup
 NIL
@@ -508,10 +622,10 @@ SLIDER
 113
 arm_infantry_count
 arm_infantry_count
-20
-100
-40.0
-1
+10
+300
+100.0
+10
 1
 NIL
 HORIZONTAL
@@ -523,10 +637,10 @@ SLIDER
 113
 aze_infantry_count
 aze_infantry_count
-20
-100
-80.0
-1
+10
+300
+200.0
+10
 1
 NIL
 HORIZONTAL
@@ -540,7 +654,7 @@ arm_artillery_count
 arm_artillery_count
 5
 75
-25.0
+10.0
 1
 1
 NIL
@@ -555,7 +669,7 @@ aze_artillery_count
 aze_artillery_count
 5
 75
-50.0
+20.0
 1
 1
 NIL
@@ -570,7 +684,7 @@ arm_drone_count
 arm_drone_count
 0
 50
-14.0
+10.0
 1
 1
 NIL
@@ -585,17 +699,17 @@ aze_drone_count
 aze_drone_count
 0
 50
-22.0
+15.0
 1
 1
 NIL
 HORIZONTAL
 
 TEXTBOX
-213
-256
-363
-274
+127
+255
+277
+273
 Agent Configuration
 11
 0.0
@@ -610,7 +724,7 @@ infantry_init_health
 infantry_init_health
 1
 100
-10.0
+20.0
 1
 1
 NIL
@@ -625,7 +739,7 @@ infantry_speed
 infantry_speed
 0
 50
-6.0
+10.0
 1
 1
 NIL
@@ -640,7 +754,7 @@ infantry_hit_rate
 infantry_hit_rate
 0
 1
-0.99
+0.1
 0.01
 1
 NIL
@@ -670,7 +784,7 @@ infantry_hit_distance
 infantry_hit_distance
 1
 100
-12.0
+5.0
 1
 1
 NIL
@@ -730,7 +844,7 @@ artillery_hit_accuracy
 artillery_hit_accuracy
 0
 1
-0.3
+0.8
 0.01
 1
 NIL
@@ -752,10 +866,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-360
-280
-540
-313
+0
+478
+180
+511
 drone_init_health
 drone_init_health
 1
@@ -767,10 +881,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-360
-320
-540
-353
+0
+518
+180
+551
 drone_speed
 drone_speed
 1
@@ -782,25 +896,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-360
-360
-540
-393
+0
+558
+180
+591
 drone_view_rate
 drone_view_rate
 0
 1
-1.0
+0.2
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-360
-400
-540
-433
+0
+598
+180
+631
 drone_view_accuracy
 drone_view_accuracy
 0
@@ -812,34 +926,119 @@ NIL
 HORIZONTAL
 
 SLIDER
-360
-440
-540
-473
+0
+638
+180
+671
 drone_view_distance
 drone_view_distance
 1
 100
-30.0
+15.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-360
-80
-532
-113
+476
+63
+648
+96
 fog_coverage
 fog_coverage
 0
 1
-0.25
+0.0
 0.01
 1
 NIL
 HORIZONTAL
+
+MONITOR
+458
+116
+576
+161
+AZE Infantry
+count turtles with [ side = \"AZE\" and kind = \"infantry\" ]
+17
+1
+11
+
+MONITOR
+576
+116
+699
+161
+ARM Infantry
+count turtles with [ side = \"ARM\" and kind = \"infantry\" ]
+17
+1
+11
+
+MONITOR
+576
+161
+699
+206
+ARM Infantry Kills
+ARM_infantry_kills
+17
+1
+11
+
+MONITOR
+458
+161
+576
+206
+AZE Infantry Kills
+AZE_infantry_kills
+17
+1
+11
+
+MONITOR
+576
+206
+699
+251
+ARM Artillery Kills
+ARM_artillery_kills
+17
+1
+11
+
+MONITOR
+458
+206
+576
+251
+AZE Artillery Kills
+AZE_artillery_kills
+17
+1
+11
+
+PLOT
+480
+267
+680
+417
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"ARM" 1.0 0 -8053223 true "" "plot count infantrys with [side = \"ARM\"]"
+"AZE" 1.0 0 -14985354 true "" "plot count infantrys with [side = \"AZE\"]"
 
 @#$#@#$#@
 ## TODO
