@@ -256,15 +256,18 @@ to init_drone
     if _side = "ARM" [
       setxy 16 + random 23  19 + random 21
     ]
-    if _side = "AZE" and who mod 1 = 0 [
+        if _side = "AZE"  [
       setxy 51 + random 4 17 + random 28
     ]
-    if _side = "AZE" and who mod 3 = 0 [
-      setxy 2 + random 4 17 + random 28
-    ]
-    if _side = "AZE" and who mod 2 = 0 [
-      setxy 15 + random 25 2 + random 4
-    ]
+  ;  if _side = "AZE" and who mod 1 = 0 [
+  ;    setxy 51 + random 4 17 + random 28
+  ;  ]
+  ;  if _side = "AZE" and who mod 3 = 0 [
+  ;    setxy 2 + random 4 17 + random 28
+  ;   ]
+  ;  if _side = "AZE" and who mod 2 = 0 [
+  ;    setxy 15 + random 25 2 + random 4
+  ;  ]
     set heading (towards patch 27 27) + random 90 - 45
   ]
 end
@@ -393,9 +396,9 @@ to-report city_center
 to turn-towards-center
   [ thisDrone ]
   ask thisDrone [
-    let change 3
+    let change 0
     if side = "ARM" [
-      set change -1
+      set change 0
     ]
     let current heading
     face city_center self
@@ -443,10 +446,20 @@ to move
     ]
   ]
   ask drones [
-    if pxcor = max-pxcor or
-       pxcor = min-pxcor or
-       pycor = max-pycor or
-       pycor = min-pycor [
+    if pxcor = max-pxcor  [
+      setxy (min-pxcor + 1) (max-pycor - pycor)
+      face city_center self
+    ]
+        if pxcor = min-pxcor  [
+      setxy (max-pxcor - 1) (max-pycor - pycor)
+      face city_center self
+   ]
+        if pycor = max-pycor  [
+      setxy (max-pxcor - pxcor) (min-pycor + 1)
+      face city_center self
+    ]
+        if pycor = min-pycor [
+      setxy (max-pxcor - pxcor) (max-pycor - 1)
       face city_center self
     ]
     turn-towards-center self
@@ -624,7 +637,7 @@ arm_infantry_count
 arm_infantry_count
 10
 300
-100.0
+170.0
 10
 1
 NIL
@@ -639,7 +652,7 @@ aze_infantry_count
 aze_infantry_count
 10
 300
-200.0
+240.0
 10
 1
 NIL
@@ -654,7 +667,7 @@ arm_artillery_count
 arm_artillery_count
 5
 75
-10.0
+69.0
 1
 1
 NIL
@@ -669,7 +682,7 @@ aze_artillery_count
 aze_artillery_count
 5
 75
-20.0
+55.0
 1
 1
 NIL
@@ -684,7 +697,7 @@ arm_drone_count
 arm_drone_count
 0
 50
-10.0
+1.0
 1
 1
 NIL
@@ -699,7 +712,7 @@ aze_drone_count
 aze_drone_count
 0
 50
-15.0
+1.0
 1
 1
 NIL
@@ -949,7 +962,7 @@ fog_coverage
 fog_coverage
 0
 1
-0.0
+0.41
 0.01
 1
 NIL
