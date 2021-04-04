@@ -82,13 +82,15 @@ patches-own [
   mod_artillery_acc   ;; Artillery Accuracy modifier by env
   mod_artillery_acc_d ;; Artillery Drone Assist Accuracy modifier by env
   mod_drone_acc       ;; Drone View Accuracy modifier by env
+  fog_density         ;; Density of fog
+  old_density         ;; Fog Movement Helper
 ]
 
 to set_globals
   set aze_color 93
   set arm_color 13
   set flat_color 36
-  set forest_color 52
+  set forest_color 56
   set river_color blue
   set mountain_color 6
   set AZE_infantry_kills 0
@@ -110,9 +112,9 @@ to set_globals
     "FFFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMGGGGGGGGGGGGFFFF"
     "FFFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMGGGGGGGGGGGFFFFF"
     "FFFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMMGGGGGGGGGGFFFFFF"
-    "FFFFFFFFFFFFMMMMMMMMMFFFFFFFFFFFFFFMMMMMGGGGGGGGGGFFFFFF"
-    "FFFFFFFFFFFFMMMMMMMMFFFFFFFFFFFFFFFFMMMMMGGGGGGGGGFFFFFF"
-    "FFFFFFFFFFFMMMMMMMMFFFFFFFFFFFFFFFFFFMMMMGGGGGGGGGFFFFFF"
+    "FFFFFFFFFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMMMGGGGGGGGGGFFFFFF"
+    "FFFFFFFFFFFFMMMMMMMMMFFFFFFFFFFFFFFFMMMMMGGGGGGGGGFFFFFF"
+    "FFFFFFFFFFFMMMMMMMMMFFFFFFFFFFFFFFFFFMMMMGGGGGGGGGFFFFFF"
     "FFFFFFFFFFMMMMMMMMMFFFFFFFFFFFFFFFFFFFMMMMGGGGGGGGFFFFFF"
     "FFFFFFFFFFMMMMMMMMFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGGGFFFFFF"
     "FFFFFFFFFMMMMMMMFFFFFFFFFFFFFFFFFFFFFFFMMMMGGGGGGGFFFFFF"
@@ -286,6 +288,9 @@ end
 ;; Initializes patches
 to init_patches
   [sim_map dim]
+  if display_shusha_map [
+    import-drawing "Shusha-alpha.png"
+  ]
   ;; color patches
   ask patches [
     set patch_pos (item (pxcor + (pycor * dim)) sim_map)
@@ -298,6 +303,7 @@ to init_patches
       set mod_artillery_acc 1
       set mod_artillery_acc_d 2
       set mod_drone_acc 1
+      set fog_density 0
     ]
     if patch_pos = "G" [
       set pcolor forest_color
@@ -308,6 +314,7 @@ to init_patches
       set mod_artillery_acc 0.5
       set mod_artillery_acc_d 1
       set mod_drone_acc 0.25
+      set fog_density 0
     ]
     if patch_pos = "R" [
       set pcolor river_color
@@ -318,6 +325,7 @@ to init_patches
       set mod_artillery_acc 2
       set mod_artillery_acc_d 2
       set mod_drone_acc 1
+      set fog_density 0
     ]
     if patch_pos = "M" [
       set pcolor mountain_color
@@ -328,21 +336,67 @@ to init_patches
       set mod_artillery_acc 0.125
       set mod_artillery_acc_d 0.25
       set mod_drone_acc 0.75
+      set fog_density 0
     ]
   ]
 end
 
-to init_fog
+;; reports over whole map
+to-report overall-fog-density
+  report (sum [fog_density] of patches) / (count patches)
+end
+
+to move_fog
   ask patches [
-    if (random-float 1) <= fog_coverage [
-      set pcolor pcolor + 2
-      set mod_infantry_speed (mod_infantry_speed * 0.9)
-      set mod_infantry_acc (mod_infantry_acc * 0.9)
-      set mod_artillery_speed (mod_artillery_speed * 0.9)
-      set mod_artillery_acc (mod_artillery_acc * 0.9)
-      set mod_artillery_acc_d (mod_artillery_acc_d * 0.9)
-      set mod_drone_acc (mod_drone_acc * 0.5)
+    let x pxcor
+    ifelse x != 0 [
+      let neighbor_fog [old_density] of patch (x - 1) pycor
+      set pcolor (pcolor + (fog_density * 4)) - (neighbor_fog * 4)
+      set fog_density neighbor_fog
+    ] [
+      if fog_density > 0 [
+        set pcolor pcolor + 1
+        set fog_density fog_density - 0.25
+      ]
     ]
+  ]
+end
+
+to finalize_fog_step
+  ask patches [
+    set old_density fog_density
+  ]
+end
+
+;; spread clustered fog
+to spread_fog
+  [ thisPatch density ]
+  if density != 0 [ ;; ensure density passed is actually something to use
+    ask thisPatch [
+      let mult 4 * (density - fog_density) ;; 4 * [ 0.25, 0.5, 0.75, or 1 ]
+      set pcolor pcolor - (mult)           ;; increasing color makes it more close to white
+      ;; Set stuff. I used power (^ mult) since the higher the density (0.9^4) would have
+      ;; more effects than lower density (0.9^1)
+      set fog_density density
+      set old_density density
+      ;; ask 8 neighbors, (could use 'neighbors4' if you want
+      ask neighbors [
+        let d density
+        if overall-fog-density > fog_coverage [ ;; check if we should stop
+          set d d - 0.25
+        ]
+        if d > fog_density [
+          spread_fog self (min (list 1 d))   ;; recurse
+        ]
+      ]
+    ]
+  ]
+end
+
+;; continue spreading fog until limit is met
+to init_fog
+  while [overall-fog-density < fog_coverage] [
+    spread_fog (one-of patches) 1
   ]
 end
 
@@ -363,7 +417,7 @@ to-report drone_view_enemy
   let mySide [side] of thisTurtle
   let spotted closest_infantry_enemy thisTurtle
   if nobody != spotted [
-    if (drone_view_accuracy * mod_drone_acc) >= random 1 [
+    if (drone_view_accuracy * mod_drone_acc * (0.5 ^ (4 * fog_density)) ) >= random-float 1 [
       report spotted
     ]
   ]
@@ -431,14 +485,14 @@ to move
       ] [
         face city_center self
       ]
-      forward mod_infantry_speed * speed / 100
+      forward mod_infantry_speed * speed / 100 * (0.9 ^ (4 * fog_density))
 
     ] [
       let enemy closest_infantry_enemy self
       if enemy != nobody [
         face enemy
         attack self enemy
-        forward mod_infantry_speed * speed / 100
+        forward mod_infantry_speed * speed / 100 * (0.9 ^ (4 * fog_density))
       ]
     ]
   ]
@@ -450,10 +504,10 @@ to move
       face city_center self
     ]
     turn-towards-center self
-    if random 1 < 0.5 [
-      ifelse random 1 < 0.0
-        [ rt random 10 - 5 ]
-        [ lt random 10 - 5 ]
+    if random-float 1 < 0.5 [
+      ifelse random-float 1 < 0.5
+        [ rt random-float 10 - 5 ]
+        [ lt random-float 10 - 5 ]
     ]
     forward speed / 100
     provide-recon self
@@ -473,7 +527,7 @@ to suffer_damage
   repeat power [
     if thisTurtle != nobody [
       ask thisTurtle [
-        if acc >= random 1 [
+        if acc >= random-float 1 [
           set health health - 1
           if health <= 0 [
             if responsible = "ARM_infantry" [
@@ -511,13 +565,13 @@ to attack
     if ticks mod r = 0 [
       if thisSide != enemySide [ ;; Should never be false, but for safety
         if thisKind = "infantry" and enemyKind = "infantry" [
-          suffer_damage enemyTurtle (mod_infantry_acc * accuracy) power (word thisSide "_" thisKind)
+          suffer_damage enemyTurtle (mod_infantry_acc * accuracy * (0.9 ^ (4 * fog_density)) ) power (word thisSide "_" thisKind)
         ]
         if thisKind = "artillery" and enemyKind = "infantry" [
           let loc_x [xcor] of enemyTurtle
           let loc_y [ycor] of enemyTurtle
           ask infantrys with [xcor = loc_x and ycor = loc_y] [
-            suffer_damage enemyTurtle (mod_artillery_acc * accuracy) power (word thisSide "_" thisKind)
+            suffer_damage enemyTurtle (mod_artillery_acc * accuracy * (0.9 ^ (4 * fog_density)) ) power (word thisSide "_" thisKind)
           ]
         ]
       ]
@@ -537,11 +591,15 @@ to setup
 end
 
 to go
-  if (count infantrys with [side = "ARM"]) > 2 and
-     (count infantrys with [side = "AZE"]) > 2 [
+;;  if (count infantrys with [side = "ARM"]) > 2 and
+;;     (count infantrys with [side = "AZE"]) > 2 [
     move
-    tick
+  if (ticks mod 50) = 0 [
+    move_fog
+    finalize_fog_step
   ]
+  tick
+;;  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -622,7 +680,7 @@ SLIDER
 113
 arm_infantry_count
 arm_infantry_count
-10
+0
 300
 100.0
 10
@@ -637,7 +695,7 @@ SLIDER
 113
 aze_infantry_count
 aze_infantry_count
-10
+0
 300
 200.0
 10
@@ -652,7 +710,7 @@ SLIDER
 153
 arm_artillery_count
 arm_artillery_count
-5
+0
 75
 10.0
 1
@@ -667,7 +725,7 @@ SLIDER
 153
 aze_artillery_count
 aze_artillery_count
-5
+0
 75
 20.0
 1
@@ -829,7 +887,7 @@ artillery_hit_rate
 artillery_hit_rate
 0
 1
-0.5
+0.25
 0.01
 1
 NIL
@@ -844,7 +902,7 @@ artillery_hit_accuracy
 artillery_hit_accuracy
 0
 1
-0.8
+0.9
 0.01
 1
 NIL
@@ -904,7 +962,7 @@ drone_view_rate
 drone_view_rate
 0
 1
-0.2
+0.25
 0.01
 1
 NIL
@@ -919,7 +977,7 @@ drone_view_accuracy
 drone_view_accuracy
 0
 1
-0.8
+0.95
 0.01
 1
 NIL
@@ -949,7 +1007,7 @@ fog_coverage
 fog_coverage
 0
 1
-0.0
+0.34
 0.01
 1
 NIL
@@ -1039,6 +1097,17 @@ false
 PENS
 "ARM" 1.0 0 -8053223 true "" "plot count infantrys with [side = \"ARM\"]"
 "AZE" 1.0 0 -14985354 true "" "plot count infantrys with [side = \"AZE\"]"
+
+SWITCH
+468
+477
+654
+510
+display_shusha_map
+display_shusha_map
+0
+1
+-1000
 
 @#$#@#$#@
 ## TODO
