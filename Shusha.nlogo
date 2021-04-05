@@ -15,6 +15,8 @@ globals [
   ARM_infantry_kills
   AZE_artillery_kills
   ARM_artillery_kills
+  AZE_drone_spots
+  ARM_drone_spots
 
   ;; set in interface
   ;; arm_infantry_count
@@ -84,6 +86,7 @@ patches-own [
   mod_drone_acc       ;; Drone View Accuracy modifier by env
   fog_density         ;; Density of fog
   old_density         ;; Fog Movement Helper
+  covering_count
 ]
 
 to set_globals
@@ -97,6 +100,8 @@ to set_globals
   set ARM_infantry_kills 0
   set AZE_artillery_kills 0
   set ARM_artillery_kills 0
+  set AZE_drone_spots 0
+  set ARM_drone_spots 0
 
   ;; Map for 56x56
   set sim_map_56 (word
@@ -249,7 +254,6 @@ to init_drone
     set health drone_init_health
     set speed drone_speed
     set rate drone_view_rate * 100
-    set accuracy drone_view_accuracy
     set dist drone_view_distance
     ifelse _side = "ARM"
       [ set color arm_color ]
@@ -257,9 +261,11 @@ to init_drone
 
     if _side = "ARM" [
       setxy 16 + random 23  19 + random 21
+      set accuracy 0.75
     ]
-        if _side = "AZE"  [
+    if _side = "AZE"  [
       setxy 51 + random 4 17 + random 28
+      set accuracy 0.95
     ]
   ;  if _side = "AZE" and who mod 1 = 0 [
   ;    setxy 51 + random 4 17 + random 28
@@ -344,6 +350,19 @@ to init_patches
   ]
 end
 
+to-report fog-covering
+  [ desiredSide ]
+  report sum [health] of (turtles-on (patches with [fog_density != 0] )) with [kind = "infantry" and side = desiredSide]
+;;  ask patches [
+;;    ifelse fog_density = 0 [
+;;      set covering_count 0
+;;    ] [
+;;      set covering_count sum [health] of infantrys with [xcor = pxcor and ycor = pycor and side = desiredSide]
+;;    ]
+;;  ]
+;;  report sum [covering_count] of patches
+end
+
 ;; reports over whole map
 to-report overall-fog-density
   report (sum [fog_density] of patches) / (count patches)
@@ -421,6 +440,11 @@ to-report drone_view_enemy
   let spotted closest_infantry_enemy thisTurtle
   if nobody != spotted [
     if (drone_view_accuracy * mod_drone_acc * (0.5 ^ (4 * fog_density)) ) >= random-float 1 [
+      ifelse mySide = "AZE" [
+        set AZE_drone_spots AZE_drone_spots + 1
+      ] [
+        set ARM_drone_spots ARM_drone_spots + 1
+      ]
       report spotted
     ]
   ]
@@ -542,19 +566,19 @@ to suffer_damage
       ask thisTurtle [
         if acc >= random-float 1 [
           set health health - 1
+          if responsible = "ARM_infantry" [
+            set ARM_infantry_kills ARM_infantry_kills + 1
+          ]
+          if responsible = "AZE_infantry" [
+            set AZE_infantry_kills AZE_infantry_kills + 1
+          ]
+          if responsible = "ARM_artillery" [
+            set ARM_artillery_kills ARM_artillery_kills + 1
+          ]
+          if responsible = "AZE_artillery" [
+            set AZE_artillery_kills AZE_artillery_kills + 1
+          ]
           if health <= 0 [
-            if responsible = "ARM_infantry" [
-              set ARM_infantry_kills ARM_infantry_kills + 1
-            ]
-            if responsible = "AZE_infantry" [
-              set AZE_infantry_kills AZE_infantry_kills + 1
-            ]
-            if responsible = "ARM_artillery" [
-              set ARM_artillery_kills ARM_artillery_kills + 1
-            ]
-            if responsible = "AZE_artillery" [
-              set AZE_artillery_kills AZE_artillery_kills + 1
-            ]
             die
           ]
         ]
@@ -592,6 +616,12 @@ to attack
   ]
 end
 
+to-report to_percent
+  [in]
+  let out (word round (in * 100))
+  report (word out "%")
+end
+
 
 to setup
   clear-all
@@ -604,15 +634,27 @@ to setup
 end
 
 to go
-;;  if (count infantrys with [side = "ARM"]) > 2 and
-;;     (count infantrys with [side = "AZE"]) > 2 [
-    move
-  if (ticks mod 50) = 0 [
+  let remaining_ARM count infantrys with [side = "ARM"]
+  let remaining_AZE count infantrys with [side = "AZE"]
+
+  if remaining_ARM < 5 or remaining_AZE < 5 [
+    let aze_won? remaining_AZE > remaining_ARM
+    let winner "ARM"
+    let loser "AZE"
+    if aze_won? [
+      set winner "AZE"
+      set loser "ARM"
+    ]
+    user-message (word loser " has retreated.\n\n" winner " is the winner")
+    stop
+  ]
+
+  move
+  if (ticks mod fog_speed) = fog_speed - 1 [
     move_fog
     finalize_fog_step
   ]
   tick
-;;  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -643,10 +685,10 @@ ticks
 30.0
 
 BUTTON
-564
-15
-629
-48
+583
+24
+648
+57
 Go
 go
 T
@@ -660,10 +702,10 @@ NIL
 0
 
 BUTTON
-494
-15
-560
-48
+513
+24
+579
+57
 Setup
 setup
 NIL
@@ -695,7 +737,7 @@ arm_infantry_count
 arm_infantry_count
 0
 300
-170.0
+100.0
 10
 1
 NIL
@@ -709,8 +751,8 @@ SLIDER
 aze_infantry_count
 aze_infantry_count
 0
-300
-240.0
+600
+100.0
 10
 1
 NIL
@@ -725,7 +767,7 @@ arm_artillery_count
 arm_artillery_count
 0
 75
-69.0
+10.0
 1
 1
 NIL
@@ -740,7 +782,7 @@ aze_artillery_count
 aze_artillery_count
 0
 75
-55.0
+70.0
 1
 1
 NIL
@@ -770,7 +812,7 @@ aze_drone_count
 aze_drone_count
 0
 50
-1.0
+3.0
 1
 1
 NIL
@@ -915,7 +957,7 @@ artillery_hit_accuracy
 artillery_hit_accuracy
 0
 1
-0.9
+1.0
 0.01
 1
 NIL
@@ -1005,22 +1047,22 @@ drone_view_distance
 drone_view_distance
 1
 100
-15.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-476
-63
-648
-96
+484
+66
+670
+99
 fog_coverage
 fog_coverage
 0
 1
-0.34
+0.25
 0.01
 1
 NIL
@@ -1028,31 +1070,31 @@ HORIZONTAL
 
 MONITOR
 458
-116
+139
 576
-161
+184
 AZE Infantry
-count turtles with [ side = \"AZE\" and kind = \"infantry\" ]
+sum [health] of turtles with [ side = \"AZE\" and kind = \"infantry\" ]
 17
 1
 11
 
 MONITOR
 576
-116
+139
 699
-161
+184
 ARM Infantry
-count turtles with [ side = \"ARM\" and kind = \"infantry\" ]
+sum [health] of turtles with [ side = \"ARM\" and kind = \"infantry\" ]
 17
 1
 11
 
 MONITOR
 576
-161
+184
 699
-206
+229
 ARM Infantry Kills
 ARM_infantry_kills
 17
@@ -1061,9 +1103,9 @@ ARM_infantry_kills
 
 MONITOR
 458
-161
+184
 576
-206
+229
 AZE Infantry Kills
 AZE_infantry_kills
 17
@@ -1072,9 +1114,9 @@ AZE_infantry_kills
 
 MONITOR
 576
-206
+229
 699
-251
+274
 ARM Artillery Kills
 ARM_artillery_kills
 17
@@ -1083,9 +1125,9 @@ ARM_artillery_kills
 
 MONITOR
 458
-206
+229
 576
-251
+274
 AZE Artillery Kills
 AZE_artillery_kills
 17
@@ -1093,11 +1135,11 @@ AZE_artillery_kills
 11
 
 PLOT
-480
-267
-680
-417
-plot 1
+479
+380
+679
+530
+Infantry Remaining
 NIL
 NIL
 0.0
@@ -1112,15 +1154,123 @@ PENS
 "AZE" 1.0 0 -14985354 true "" "plot count infantrys with [side = \"AZE\"]"
 
 SWITCH
-468
-477
-654
-510
+484
+101
+670
+134
 display_shusha_map
 display_shusha_map
-0
+1
 1
 -1000
+
+MONITOR
+458
+275
+575
+320
+AZE Drone Spots
+AZE_drone_spots
+17
+1
+11
+
+MONITOR
+575
+275
+699
+320
+ARM Drone Spots
+ARM_drone_spots
+17
+1
+11
+
+MONITOR
+458
+321
+575
+366
+AZE Spot:Kill
+to_percent (AZE_artillery_kills / AZE_drone_spots)
+17
+1
+11
+
+MONITOR
+574
+321
+699
+366
+ARM Spot:Kill
+to_percent (ARM_artillery_kills / ARM_drone_spots)
+17
+1
+11
+
+CHOOSER
+338
+15
+500
+60
+troop_count_scenario
+troop_count_scenario
+"AZE_Reported" "ARM_Reported" "Average"
+1
+
+SLIDER
+128
+24
+300
+57
+fog_speed
+fog_speed
+0
+50
+36.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+498
+552
+698
+702
+Drone Spots
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"AZE" 1.0 0 -14070903 true "" "plot AZE_drone_spots"
+"ARM" 1.0 0 -8053223 true "" "plot ARM_drone_spots"
+"Fog" 1.0 0 -1184463 true "" "plot overall-fog-density"
+
+PLOT
+280
+551
+491
+702
+Fog Covering Infantry
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"AZE" 1.0 0 -14454117 true "" "plot fog-covering \"AZE\""
+"ARM" 1.0 0 -8053223 true "" "plot fog-covering \"ARM\""
 
 @#$#@#$#@
 ## TODO
