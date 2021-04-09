@@ -11,6 +11,7 @@ globals [
   mountain_color
   sim_map_56
 
+  ;; Report Values
   AZE_infantry_kills
   ARM_infantry_kills
   AZE_artillery_kills
@@ -18,29 +19,29 @@ globals [
   AZE_drone_spots
   ARM_drone_spots
 
-  ;; set in interface
-  ;; arm_infantry_count
-  ;; aze_infantry_count
-  ;; arm_artillery_count
-  ;; aze_artillery_count
-  ;; arm_drone_count
-  ;; aze_drone_count
-  ;; infantry_init_health
-  ;; infantry_speed
-  ;; infantry_hit_rate
-  ;; infantry_hit_accuracy
-  ;; infantry_hit_distance
-  ;; artillery_init_health
-  ;; artillery_speed
-  ;; artillery_hit_rate
-  ;; artillery_hit_accuracy
-  ;; artillery_hit_distance
-  ;; drone_init_health
-  ;; drone_speed
-  ;; drone_view_rate
-  ;; drone_view_accuracy
-  ;; drone_view_distance
-  ;; fog_coverage
+  ;; Agent Counts
+  arm_infantry_count
+  aze_infantry_count
+  arm_artillery_count
+  aze_artillery_count
+  arm_drone_count
+  aze_drone_count
+
+  ;; Agent Stats - Set in Interface
+  ;infantry_init_health
+  ;infantry_speed
+  ;infantry_hit_rate
+  ;infantry_hit_accuracy
+  ;infantry_hit_distance
+  ;artillery_init_health
+  ;artillery_hit_rate
+  ;artillery_hit_accuracy
+  ;artillery_hit_distance
+  ;drone_speed
+  ;drone_view_rate
+  ;drone_view_accuracy
+  ;drone_view_distance
+  ;fog_coverage
 ]
 
 infantrys-own [
@@ -80,7 +81,6 @@ patches-own [
   environment         ;; What type of patch is it?
   mod_infantry_speed  ;; Infantry Speed modifier by env
   mod_infantry_acc    ;; Infantry Accuracy modifier by env
-  mod_artillery_speed ;; Artillery Speed modifier by env
   mod_artillery_acc   ;; Artillery Accuracy modifier by env
   mod_artillery_acc_d ;; Artillery Drone Assist Accuracy modifier by env
   mod_drone_acc       ;; Drone View Accuracy modifier by env
@@ -102,6 +102,31 @@ to set_globals
   set ARM_artillery_kills 0
   set AZE_drone_spots 0
   set ARM_drone_spots 0
+
+  if troop_count_scenario = "Equal" [
+    set arm_infantry_count 100
+    set aze_infantry_count 100
+    set arm_artillery_count 10
+    set aze_artillery_count 70
+    set arm_drone_count 1
+    set aze_drone_count 3
+  ]
+  if troop_count_scenario = "AZE_Reported" [
+    set arm_infantry_count 100
+    set aze_infantry_count 20
+    set arm_artillery_count 10
+    set aze_artillery_count 70
+    set arm_drone_count 1
+    set aze_drone_count 3
+  ]
+  if troop_count_scenario = "ARM_Reported" [
+    set arm_infantry_count 100
+    set aze_infantry_count 300
+    set arm_artillery_count 10
+    set aze_artillery_count 70
+    set arm_drone_count 1
+    set aze_drone_count 3
+  ]
 
   ;; Map for 56x56
   set sim_map_56 (word
@@ -216,7 +241,7 @@ to init_artillery
     set side _side
     set kind "artillery"
     set health artillery_init_health
-    set speed artillery_speed
+    set speed 0
     set rate artillery_hit_rate * 100
     set accuracy artillery_hit_accuracy
     set dist artillery_hit_distance
@@ -251,7 +276,7 @@ to init_drone
     set shape "airplane"
     set side _side
     set kind "drone"
-    set health drone_init_health
+    set health 1
     set speed drone_speed
     set rate drone_view_rate * 100
     set dist drone_view_distance
@@ -308,7 +333,6 @@ to init_patches
       set environment "flat"
       set mod_infantry_speed 1
       set mod_infantry_acc 1
-      set mod_artillery_speed 1
       set mod_artillery_acc 1
       set mod_artillery_acc_d 2
       set mod_drone_acc 1
@@ -319,7 +343,6 @@ to init_patches
       set environment "forest"
       set mod_infantry_speed 0.5
       set mod_infantry_acc 0.5
-      set mod_artillery_speed 0.5
       set mod_artillery_acc 0.5
       set mod_artillery_acc_d 1
       set mod_drone_acc 0.25
@@ -330,7 +353,6 @@ to init_patches
       set environment "river"
       set mod_infantry_speed 0.25
       set mod_infantry_acc 2
-      set mod_artillery_speed 0.2
       set mod_artillery_acc 2
       set mod_artillery_acc_d 2
       set mod_drone_acc 1
@@ -341,7 +363,6 @@ to init_patches
       set environment "mountain"
       set mod_infantry_speed 0.125
       set mod_infantry_acc 0.3
-      set mod_artillery_speed 0.1
       set mod_artillery_acc 0.125
       set mod_artillery_acc_d 0.25
       set mod_drone_acc 0.75
@@ -366,6 +387,11 @@ end
 ;; reports over whole map
 to-report overall-fog-density
   report (sum [fog_density] of patches) / (count patches)
+end
+
+to-report infantry-total
+  [aSide]
+  report (sum [health] of infantrys with [side = aSide])
 end
 
 to move_fog
@@ -719,110 +745,10 @@ NIL
 1
 
 TEXTBOX
-116
-58
-266
-76
-Initialization Conditions
-11
-0.0
-1
-
-SLIDER
-0
-80
-180
-113
-arm_infantry_count
-arm_infantry_count
-0
-300
-100.0
-10
-1
-NIL
-HORIZONTAL
-
-SLIDER
-180
-80
-360
-113
-aze_infantry_count
-aze_infantry_count
-0
-600
-100.0
-10
-1
-NIL
-HORIZONTAL
-
-SLIDER
-0
-120
-180
-153
-arm_artillery_count
-arm_artillery_count
-0
-75
-10.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-180
-120
-360
-153
-aze_artillery_count
-aze_artillery_count
-0
-75
-70.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-0
-160
-180
-193
-arm_drone_count
-arm_drone_count
-0
-50
-1.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-180
-160
-360
-193
-aze_drone_count
-aze_drone_count
-0
-50
-3.0
-1
-1
-NIL
-HORIZONTAL
-
-TEXTBOX
-127
-255
-277
-273
+26
+16
+176
+34
 Agent Configuration
 11
 0.0
@@ -830,9 +756,9 @@ Agent Configuration
 
 SLIDER
 0
-280
+34
 180
-313
+67
 infantry_init_health
 infantry_init_health
 1
@@ -845,9 +771,9 @@ HORIZONTAL
 
 SLIDER
 0
-320
+68
 180
-353
+101
 infantry_speed
 infantry_speed
 0
@@ -860,9 +786,9 @@ HORIZONTAL
 
 SLIDER
 0
-360
+102
 180
-393
+135
 infantry_hit_rate
 infantry_hit_rate
 0
@@ -875,9 +801,9 @@ HORIZONTAL
 
 SLIDER
 0
-400
+136
 180
-433
+169
 infantry_hit_accuracy
 infantry_hit_accuracy
 0
@@ -890,9 +816,9 @@ HORIZONTAL
 
 SLIDER
 0
-440
+169
 180
-473
+202
 infantry_hit_distance
 infantry_hit_distance
 1
@@ -904,10 +830,10 @@ NIL
 HORIZONTAL
 
 SLIDER
+0
+366
 180
-280
-360
-313
+399
 artillery_init_health
 artillery_init_health
 1
@@ -919,25 +845,10 @@ NIL
 HORIZONTAL
 
 SLIDER
+0
+399
 180
-320
-360
-353
-artillery_speed
-artillery_speed
-1
-50
-1.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-180
-360
-360
-393
+432
 artillery_hit_rate
 artillery_hit_rate
 0
@@ -949,10 +860,10 @@ NIL
 HORIZONTAL
 
 SLIDER
+0
+431
 180
-400
-360
-433
+464
 artillery_hit_accuracy
 artillery_hit_accuracy
 0
@@ -964,10 +875,10 @@ NIL
 HORIZONTAL
 
 SLIDER
+0
+463
 180
-440
-360
-473
+496
 artillery_hit_distance
 artillery_hit_distance
 1
@@ -980,24 +891,9 @@ HORIZONTAL
 
 SLIDER
 0
-478
+234
 180
-511
-drone_init_health
-drone_init_health
-1
-100
-50.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-0
-518
-180
-551
+267
 drone_speed
 drone_speed
 1
@@ -1010,9 +906,9 @@ HORIZONTAL
 
 SLIDER
 0
-558
+267
 180
-591
+300
 drone_view_rate
 drone_view_rate
 0
@@ -1025,9 +921,9 @@ HORIZONTAL
 
 SLIDER
 0
-598
+300
 180
-631
+333
 drone_view_accuracy
 drone_view_accuracy
 0
@@ -1040,9 +936,9 @@ HORIZONTAL
 
 SLIDER
 0
-638
+334
 180
-671
+367
 drone_view_distance
 drone_view_distance
 1
@@ -1062,17 +958,17 @@ fog_coverage
 fog_coverage
 0
 1
-0.25
+0.0
 0.01
 1
 NIL
 HORIZONTAL
 
 MONITOR
-458
-139
-576
-184
+372
+149
+490
+194
 AZE Infantry
 sum [health] of turtles with [ side = \"AZE\" and kind = \"infantry\" ]
 17
@@ -1080,10 +976,10 @@ sum [health] of turtles with [ side = \"AZE\" and kind = \"infantry\" ]
 11
 
 MONITOR
-576
-139
-699
-184
+490
+149
+613
+194
 ARM Infantry
 sum [health] of turtles with [ side = \"ARM\" and kind = \"infantry\" ]
 17
@@ -1091,10 +987,10 @@ sum [health] of turtles with [ side = \"ARM\" and kind = \"infantry\" ]
 11
 
 MONITOR
-576
-184
-699
-229
+490
+194
+613
+239
 ARM Infantry Kills
 ARM_infantry_kills
 17
@@ -1102,10 +998,10 @@ ARM_infantry_kills
 11
 
 MONITOR
-458
-184
-576
-229
+372
+194
+490
+239
 AZE Infantry Kills
 AZE_infantry_kills
 17
@@ -1113,10 +1009,10 @@ AZE_infantry_kills
 11
 
 MONITOR
-576
-229
-699
-274
+490
+239
+613
+284
 ARM Artillery Kills
 ARM_artillery_kills
 17
@@ -1124,10 +1020,10 @@ ARM_artillery_kills
 11
 
 MONITOR
-458
-229
-576
-274
+372
+239
+490
+284
 AZE Artillery Kills
 AZE_artillery_kills
 17
@@ -1135,10 +1031,10 @@ AZE_artillery_kills
 11
 
 PLOT
-479
-380
-679
-530
+280
+401
+491
+551
 Infantry Remaining
 NIL
 NIL
@@ -1150,14 +1046,14 @@ true
 false
 "" ""
 PENS
-"ARM" 1.0 0 -8053223 true "" "plot count infantrys with [side = \"ARM\"]"
-"AZE" 1.0 0 -14985354 true "" "plot count infantrys with [side = \"AZE\"]"
+"ARM" 1.0 0 -8053223 true "" "plot infantry-total \"ARM\""
+"AZE" 1.0 0 -14985354 true "" "plot infantry-total \"AZE\""
 
 SWITCH
 484
-101
+99
 670
-134
+132
 display_shusha_map
 display_shusha_map
 1
@@ -1165,10 +1061,10 @@ display_shusha_map
 -1000
 
 MONITOR
-458
-275
-575
-320
+372
+285
+489
+330
 AZE Drone Spots
 AZE_drone_spots
 17
@@ -1176,10 +1072,10 @@ AZE_drone_spots
 11
 
 MONITOR
-575
-275
-699
-320
+489
+285
+613
+330
 ARM Drone Spots
 ARM_drone_spots
 17
@@ -1187,10 +1083,10 @@ ARM_drone_spots
 11
 
 MONITOR
-458
-321
-575
-366
+372
+331
+489
+376
 AZE Spot:Kill
 to_percent (AZE_artillery_kills / AZE_drone_spots)
 17
@@ -1198,10 +1094,10 @@ to_percent (AZE_artillery_kills / AZE_drone_spots)
 11
 
 MONITOR
-574
-321
-699
-366
+488
+331
+613
+376
 ARM Spot:Kill
 to_percent (ARM_artillery_kills / ARM_drone_spots)
 17
@@ -1209,20 +1105,20 @@ to_percent (ARM_artillery_kills / ARM_drone_spots)
 11
 
 CHOOSER
-338
-15
-500
-60
+313
+99
+485
+144
 troop_count_scenario
 troop_count_scenario
-"AZE_Reported" "ARM_Reported" "Average"
-1
+"AZE_Reported" "ARM_Reported" "Equal"
+2
 
 SLIDER
-128
-24
-300
-57
+313
+66
+485
+99
 fog_speed
 fog_speed
 0
@@ -1234,9 +1130,9 @@ NIL
 HORIZONTAL
 
 PLOT
-498
-552
-698
+491
+550
+701
 702
 Drone Spots
 NIL
@@ -1251,13 +1147,12 @@ false
 PENS
 "AZE" 1.0 0 -14070903 true "" "plot AZE_drone_spots"
 "ARM" 1.0 0 -8053223 true "" "plot ARM_drone_spots"
-"Fog" 1.0 0 -1184463 true "" "plot overall-fog-density"
 
 PLOT
-280
+490
+401
+701
 551
-491
-702
 Fog Covering Infantry
 NIL
 NIL
@@ -1271,6 +1166,25 @@ false
 PENS
 "AZE" 1.0 0 -14454117 true "" "plot fog-covering \"AZE\""
 "ARM" 1.0 0 -8053223 true "" "plot fog-covering \"ARM\""
+
+PLOT
+280
+551
+491
+701
+Artillery Kills
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"AZE" 1.0 0 -13345367 true "" "plot AZE_artillery_kills"
+"pen-1" 1.0 0 -2674135 true "" "plot ARM_artillery_kills"
 
 @#$#@#$#@
 ## TODO
@@ -1623,6 +1537,33 @@ NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>AZE_artillery_kills</metric>
+    <metric>ARM_artillery_kills</metric>
+    <metric>AZE_drone_spots</metric>
+    <metric>ARM_drone_spots</metric>
+    <metric>fog-covering "AZE"</metric>
+    <metric>fog-covering "ARM"</metric>
+    <metric>infantry-total "AZE"</metric>
+    <metric>infantry-total "ARM"</metric>
+    <enumeratedValueSet variable="fog_coverage">
+      <value value="0"/>
+      <value value="0.1"/>
+      <value value="0.2"/>
+      <value value="0.3"/>
+      <value value="0.4"/>
+      <value value="0.5"/>
+      <value value="0.6"/>
+      <value value="0.7"/>
+      <value value="0.8"/>
+      <value value="0.9"/>
+      <value value="1"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
