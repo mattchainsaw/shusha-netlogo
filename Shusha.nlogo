@@ -494,7 +494,7 @@ end
 
 to-report city_center
   [ thisTurtle ]
-  report min-one-of patches with [ pxcor  >= 24 and pxcor < 32 and pycor >= 28 and pycor < 36 ] [ distance thisTurtle ]
+  report one-of patches with [ pxcor  >= 24 and pxcor < 32 and pycor >= 28 and pycor < 36 ]
   end
 
 to turn-towards-center
@@ -660,18 +660,16 @@ to setup
 end
 
 to go
-  let remaining_ARM count infantrys with [side = "ARM"]
-  let remaining_AZE count infantrys with [side = "AZE"]
 
-  if remaining_ARM < 5 or remaining_AZE < 5 [
-    let aze_won? remaining_AZE > remaining_ARM
+  if infantry-total "ARM" < 100 or infantry-total "AZE" < 100 [
+    let aze_won? infantry-total "AZE" > infantry-total "ARM"
     let winner "ARM"
     let loser "AZE"
     if aze_won? [
       set winner "AZE"
       set loser "ARM"
     ]
-    user-message (word loser " has retreated.\n\n" winner " is the winner")
+    ;;user-message (word loser " has retreated.\n\n" winner " is the winner")
     stop
   ]
 
@@ -958,7 +956,7 @@ fog_coverage
 fog_coverage
 0
 1
-0.0
+1.0
 0.01
 1
 NIL
@@ -1538,7 +1536,7 @@ NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+  <experiment name="experiment" repetitions="100" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
     <metric>AZE_artillery_kills</metric>
@@ -1551,15 +1549,25 @@ NetLogo 6.2.0
     <metric>infantry-total "ARM"</metric>
     <enumeratedValueSet variable="fog_coverage">
       <value value="0"/>
+      <value value="0.05"/>
       <value value="0.1"/>
+      <value value="0.15"/>
       <value value="0.2"/>
+      <value value="0.25"/>
       <value value="0.3"/>
+      <value value="0.35"/>
       <value value="0.4"/>
+      <value value="0.45"/>
       <value value="0.5"/>
+      <value value="0.55"/>
       <value value="0.6"/>
+      <value value="0.65"/>
       <value value="0.7"/>
+      <value value="0.75"/>
       <value value="0.8"/>
+      <value value="0.85"/>
       <value value="0.9"/>
+      <value value="0.95"/>
       <value value="1"/>
     </enumeratedValueSet>
   </experiment>
